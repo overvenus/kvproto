@@ -1,3 +1,11 @@
+# POC for serde support
+
+## Test
+
+```
+cargo test --all --features "with-serde" -- --nocapture
+```
+
 # kvproto
 Protocol buffer files for TiKV
 

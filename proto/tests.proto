@@ -1,0 +1,11 @@
+syntax = "proto3";
+package coprocessor;
+
+import "rustproto.proto";
+
+option (rustproto.serde_derive_all) = true;
+
+message TT {
+    string s = 1;
+    bytes b = 2;
+}
