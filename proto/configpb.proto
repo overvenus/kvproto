@@ -1,0 +1,16 @@
+syntax = "proto3";
+package configpb;
+
+// TiDB -> PD update config
+
+service Config {
+    rpc Update(UpdateRequest) returns (UpdateResponse) {}
+}
+
+message UpdateRequest {
+    uint64 cluster_id = 1;
+    string config = 2;
+}
+
+message UpdateResponse {
+}
