@@ -4,12 +4,31 @@ package configpb;
 // TiDB -> PD update config
 
 service Config {
+    rpc Get(GetRequest) returns (GetResponse) {}
     rpc Update(UpdateRequest) returns (UpdateResponse) {}
+}
+
+enum Component {
+    UNKNOWN = 0;
+    PD = 1;
+    TiKV = 2;
+}
+
+message GetRequest {
+    uint64 cluster_id = 1;
+
+    Component component = 2;
+    string config = 3;
+}
+
+message GetResponse {
 }
 
 message UpdateRequest {
     uint64 cluster_id = 1;
-    string config = 2;
+
+    Component component = 2;
+    string config = 3;
 }
 
 message UpdateResponse {
