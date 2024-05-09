@@ -229,3 +229,77 @@ pub mod cdc_adapt {
         }
     }
 }
+
+pub(crate) mod heap_size_eraftpb {
+    pub(crate) mod conf_change_type_field {
+        pub(crate) fn heap_size(_: &raft_proto::eraftpb::ConfChangeType) -> usize {
+            0
+        }
+    }
+
+    fn entry_heap_size(entry: &raft_proto::eraftpb::Entry) -> usize {
+        entry.context.len() + entry.data.len()
+    }
+
+    pub(crate) mod entry_optional_field {
+        use raft_proto::eraftpb::Entry;
+        pub(crate) fn heap_size(entry: &protobuf::SingularPtrField<Entry>) -> usize {
+            if let Some(entry) = entry.as_ref() {
+                // SingularPtrField is a Option<Box<T>>.
+                super::entry_heap_size(entry) + std::mem::size_of::<Entry>()
+            } else {
+                0
+            }
+        }
+    }
+
+    pub(crate) mod entry_repeated_field {
+        pub(crate) fn heap_size(
+            entries: &protobuf::RepeatedField<raft_proto::eraftpb::Entry>,
+        ) -> usize {
+            let mut sz = 0;
+            for e in entries {
+                sz += super::entry_heap_size(e);
+            }
+            sz
+        }
+    }
+
+    pub(crate) mod message_field {
+        use raft_proto::eraftpb::{ConfState, Message, Snapshot, SnapshotMetadata};
+        pub(crate) fn heap_size(message: &protobuf::SingularPtrField<Message>) -> usize {
+            let message = match message.as_ref() {
+                Some(m) => m,
+                None => return 0,
+            };
+            // SingularPtrField is a Option<Box<T>>.
+            let mut sz = std::mem::size_of::<Message>();
+            if !message.entries.is_empty() {
+                sz += super::entry_heap_size(&message.entries[0]) * message.entries.len();
+                sz += std::mem::size_of::<Message>() * message.entries.capacity();
+            };
+            if let Some(snapshot) = message.snapshot.as_ref() {
+                sz += std::mem::size_of::<Snapshot>();
+                sz += snapshot.data.len();
+                if snapshot.metadata.is_some() {
+                    sz += std::mem::size_of::<SnapshotMetadata>();
+                    sz += std::mem::size_of::<ConfState>();
+                }
+            }
+            sz += message.context.len();
+            sz
+        }
+    }
+
+    pub(crate) mod hard_state_field {
+        use raft_proto::eraftpb::HardState;
+        pub(crate) fn heap_size(state: &protobuf::SingularPtrField<HardState>) -> usize {
+            if state.is_some() {
+                // SingularPtrField is a Option<Box<T>>.
+                std::mem::size_of::<HardState>()
+            } else {
+                0
+            }
+        }
+    }
+}
